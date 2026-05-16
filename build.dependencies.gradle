@@ -1,6 +1,14 @@
 repositories {
     mavenCentral()
     google() // Needed for androidx
+    maven {
+        name = 'epralib'
+        url = uri("https://maven.pkg.github.com/mallratsftc01/EPRALib")
+        credentials {
+            username = project.findProperty("gpr.user") ?: ("")
+            password = project.findProperty("gpr.key") ?: ("")
+        }
+    }
 }
 
 dependencies {
@@ -13,5 +21,8 @@ dependencies {
     implementation 'org.firstinspires.ftc:FtcCommon:11.1.0'
     implementation 'org.firstinspires.ftc:Vision:11.1.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
+    implementation ('com.epra.epralib:ftclib:1.7.0') {
+        exclude group: 'org.firstinspires.ftc'
+    }
 }
 
