@@ -6,18 +6,23 @@ import com.epra.epralib.ftclib.location.imu.MultiIMU;
 import com.epra.epralib.ftclib.location.Odometry;
 import com.epra.epralib.ftclib.location.Pose;
 import com.epra.epralib.ftclib.math.geometry.Angle;
-import com.epra.epralib.ftclib.math.geometry.Geometry;
 import com.epra.epralib.ftclib.math.geometry.Vector;
+import com.epra.epralib.ftclib.movement.Motor;
+import com.epra.epralib.ftclib.movement.frames.CRServoFrame;
 import com.epra.epralib.ftclib.movement.frames.DcMotorExFrame;
 import com.epra.epralib.ftclib.movement.DriveTrain;
 import com.epra.epralib.ftclib.movement.MotorController;
+import com.epra.epralib.ftclib.movement.frames.ServoFrame;
 import com.epra.epralib.ftclib.movement.pid.PIDController;
 import com.epra.epralib.ftclib.storage.logdata.LogController;
 import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.epra.epralib.ftclib.math.geometry.Geometry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 import java.util.HashMap;
@@ -39,6 +44,7 @@ public class BioBuzzTeleOp extends LinearOpMode {
     private Odometry odometry;
 
     private Controller controller1;
+    private Controller controller2;
 
     @Override
     public void runOpMode() {
@@ -68,9 +74,11 @@ public class BioBuzzTeleOp extends LinearOpMode {
                 .build();
         frontLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "northwestMotor")))
                 .driveOrientation(DriveTrain.Orientation.LEFT_FRONT)
+                .direction(Motor.Direction.REVERSE)
                 .build();
         backLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "southwestMotor")))
                 .driveOrientation(DriveTrain.Orientation.LEFT_BACK)
+                .direction(Motor.Direction.REVERSE)
                 .build();
 
         //Setting up the Odometry
@@ -96,14 +104,22 @@ public class BioBuzzTeleOp extends LinearOpMode {
         //Setting up the MotorControllers that are not part of the DriveTrain
         nonDriveMotors = new HashMap<>();
         //Add MotorControllers like so:
-        /* nonDriveMotors.put("ID",
-        new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "motorController1")))
-                .id("ID")
+        nonDriveMotors.put("Flaps",
+        new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "Flaps")))
+                .id("Flaps")
                 .addLogTarget(MotorController.LogTarget.POSITION)
                 .build());
-         LogController.addLogger(nonDriveMotors.get("ID"));*/
+         LogController.addLogger(nonDriveMotors.get("Flaps"));
 
         controller1 = new Controller(gamepad1, 0.0f, "1",
+                new Controller.Key[] {
+                        Controller.Key.LEFT_STICK_X,
+                        Controller.Key.LEFT_STICK_Y,
+                        Controller.Key.RIGHT_STICK_X,
+                        Controller.Key.RIGHT_STICK_Y
+                });
+
+        controller2 = new Controller(gamepad2, 0.0f, "2",
                 new Controller.Key[] {
                         Controller.Key.LEFT_STICK_X,
                         Controller.Key.LEFT_STICK_Y,
@@ -119,9 +135,10 @@ public class BioBuzzTeleOp extends LinearOpMode {
             //Updates all active PID loops
             PIDController.update();
 
-            //Uses the joysticks to drive the robot with fieldOrientedMecanumDrive
-            drive.fieldOrientedMecanumDrive(controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), controller1.analogDeadband(Controller.Stick.LEFT_STICK), imu.getYaw());
+            //Uses the joysticks to drive the robot with mecanumDrive
+            drive.mecanumDrive(0.75 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), 0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
 
+            nonDriveMotors.get("Flaps").setPower(-1 * controller2.getAnalog(Controller.Key.LEFT_STICK_Y));
         }
 
         //Closes all logs
