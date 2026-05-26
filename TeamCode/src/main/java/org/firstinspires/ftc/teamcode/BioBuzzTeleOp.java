@@ -136,8 +136,13 @@ public class BioBuzzTeleOp extends LinearOpMode {
             PIDController.update();
 
             //Uses the joysticks to drive the robot with mecanumDrive
-            drive.mecanumDrive(0.75 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), 0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
+            if (controller1.getButton(Controller.Key.BUMPER_LEFT)) {
+                drive.mecanumDrive(0.25 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
+            }
+            else {
+                drive.mecanumDrive(0.75 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
 
+            }
             nonDriveMotors.get("Flaps").setPower(-1 * controller2.getAnalog(Controller.Key.LEFT_STICK_Y));
         }
 
