@@ -144,12 +144,12 @@ public class BioBuzzTeleOp extends LinearOpMode {
                 drive.mecanumDrive(0.25 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
             else {
-                drive.mecanumDrive(0.75 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
+                drive.mecanumDrive(0.88 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
             //The x and y say if you move thhe joystick horizontally or vertically
 
             //Moves intake while left stick is being pushed vertically on controller2
-            nonDriveMotors.get("Intake").setPower(controller2.getAnalog(Controller.Key.LEFT_STICK_Y));
+            nonDriveMotors.get("Intake").setPower(-1 * controller2.getAnalog(Controller.Key.LEFT_STICK_Y));
         }
 
         //Closes all logs
