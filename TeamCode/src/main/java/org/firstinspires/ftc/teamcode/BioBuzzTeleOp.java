@@ -46,6 +46,8 @@ public class BioBuzzTeleOp extends LinearOpMode {
     private Controller controller1;
     private Controller controller2;
 
+    private float intakeLockPower;
+
     @Override
     public void runOpMode() {
 
@@ -106,11 +108,11 @@ public class BioBuzzTeleOp extends LinearOpMode {
         nonDriveMotors = new HashMap<>();
         //Add MotorControllers like so:
         nonDriveMotors.put("Intake",
-        new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "Intake")))
-                .id("Intake")
-                .addLogTarget(MotorController.LogTarget.POSITION)
-                .build());
-         LogController.addLogger(nonDriveMotors.get("Intake"));
+                new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "Intake")))
+                        .id("Intake")
+                        .addLogTarget(MotorController.LogTarget.POSITION)
+                        .build());
+        LogController.addLogger(nonDriveMotors.get("Intake"));
 
         //Setting up controller1
         controller1 = new Controller(gamepad1, 0.0f, "1",
@@ -130,6 +132,8 @@ public class BioBuzzTeleOp extends LinearOpMode {
                         Controller.Key.RIGHT_STICK_Y
                 });
 
+        controller2.createChord("IntakeLock", Controller.Key.LEFT_TRIGGER, Controller.Key.RIGHT_TRIGGER);
+
         LogController.logInfo("Waiting for start...");
         waitForStart();
         LogController.logInfo("Starting TeleOp.");
@@ -139,17 +143,23 @@ public class BioBuzzTeleOp extends LinearOpMode {
             //Updates all active PID loops
             PIDController.update();
 
-            //Uses the left joystick and right joystick horizontally to drive the robot with mecanumDrive and drives slower with the left bumper pressed
-            if (controller1.getButton(Controller.Key.BUMPER_LEFT)) {
+            if (controller1.getButton(Controller.Key.BUMPER_RIGHT)) {
                 drive.mecanumDrive(0.25 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
             else {
                 drive.mecanumDrive(0.88 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
-            //The x and y say if you move thhe joystick horizontally or vertically
+            //The x and y say if you move the joystick horizontally or vertically
 
-            //Moves intake while left stick is being pushed vertically on controller2
-            nonDriveMotors.get("Intake").setPower(-1 * controller2.getAnalog(Controller.Key.LEFT_STICK_Y));
+            if (controller2.buttonSingle("IntakeLock")) {
+                controller2.flipToggle("IntakeLock");
+                intakeLockPower = (-1 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
+            }
+            if (controller2.getToggle("IntakeLock")) {
+                nonDriveMotors.get("Intake").setPower(intakeLockPower);
+            } else {
+                nonDriveMotors.get("Intake").setPower(-1 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
+            }
         }
 
         //Closes all logs
