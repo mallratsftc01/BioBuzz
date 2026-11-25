@@ -40,13 +40,17 @@ public class BioBuzzTeleOp extends LinearOpMode {
 
     private HashMap<String, MotorController> nonDriveMotors;
 
+    private double shooterLockPower;
+
+    private double intakeLockPower;
+
     private MultiIMU imu;
     private Odometry odometry;
 
     private Controller controller1;
     private Controller controller2;
 
-    private float intakeLockPower;
+    int shotPower = 75;
 
     @Override
     public void runOpMode() {
@@ -60,26 +64,26 @@ public class BioBuzzTeleOp extends LinearOpMode {
         RevHubOrientationOnRobot orientationOnRobot = new RevHubOrientationOnRobot(logoDirection, usbDirection);
 
         //Setting up the IMU
-        IMU tempIMU = hardwareMap.get(IMU.class, "imu 1");
+        /*IMU tempIMU = hardwareMap.get(IMU.class, "imu 1");
         tempIMU.initialize(new IMU.Parameters(orientationOnRobot));
         imu = new MultiIMU.Builder(new IMUFrame(tempIMU))
                 .initialYaw(Geometry.subtract(Angle.degree(tempIMU.getRobotYawPitchRollAngles().getYaw(AngleUnit.DEGREES)), START_POSE.angle))
                 .loggingTarget(MultiIMU.Axis.YAW)
                 .build();
-        LogController.addLogger(imu);
+        LogController.addLogger(imu); */
 
         //Setting up the MotorControllers for the DriveTrain
-        frontRight = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "northeastMotor")))
+        frontRight = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "frontRight")))
                 .driveOrientation(DriveTrain.Orientation.RIGHT_FRONT)
                 .build();
-        backRight = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "southeastMotor")))
+        backRight = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "backRight")))
                 .driveOrientation(DriveTrain.Orientation.RIGHT_BACK)
                 .build();
-        frontLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "northwestMotor")))
+        frontLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "frontLeft")))
                 .driveOrientation(DriveTrain.Orientation.LEFT_FRONT)
                 .direction(Motor.Direction.REVERSE)
                 .build();
-        backLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "southwestMotor")))
+        backLeft = new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "backLeft")))
                 .driveOrientation(DriveTrain.Orientation.LEFT_BACK)
                 .direction(Motor.Direction.REVERSE)
                 .build();
@@ -89,7 +93,7 @@ public class BioBuzzTeleOp extends LinearOpMode {
                 .leftEncoder(frontLeft::getCurrentPosition, 0.01, new Vector(8, 4))
                 .rightEncoder(backLeft::getCurrentPosition, 0.01, new Vector(-8, 4))
                 .perpendicularEncoder(frontRight::getCurrentPosition, 0.01, new Vector(0, 2))
-                .heading(imu::getYaw)
+                //.heading(imu::getYaw)
                 .startPose(new Pose(new Vector(0, 0), Angle.degree(0)))
                 .loggingTargets(Odometry.LoggingTarget.X, Odometry.LoggingTarget.Y)
                 .build();
@@ -107,12 +111,33 @@ public class BioBuzzTeleOp extends LinearOpMode {
         //Setting up the MotorControllers that are not part of the DriveTrain
         nonDriveMotors = new HashMap<>();
         //Add MotorControllers like so:
+        nonDriveMotors.put("pollenShooter",
+                new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "pollenShooter")))
+                        .id("pollenShooter")
+                        .addLogTarget(MotorController.LogTarget.POSITION)
+                        .build());
+        LogController.addLogger(nonDriveMotors.get("pollenShooter"));
+
+        /* nonDriveMotors.put("nectarShooter",
+                new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "nectarShooter")))
+                        .id("nectarShooter")
+                        .addLogTarget(MotorController.LogTarget.POSITION)
+                        .build());
+        LogController.addLogger(nonDriveMotors.get("nectarShooter")); */
+
         nonDriveMotors.put("Intake",
                 new MotorController.Builder(new DcMotorExFrame(hardwareMap.get(DcMotorEx.class, "Intake")))
                         .id("Intake")
                         .addLogTarget(MotorController.LogTarget.POSITION)
                         .build());
         LogController.addLogger(nonDriveMotors.get("Intake"));
+
+        /* nonDriveMotors.put("Pusher",
+                new MotorController.Builder(new ServoFrame(hardwareMap.get(Servo.class, "Pusher")))
+                        .id("Pusher")
+                        .addLogTarget(MotorController.LogTarget.POSITION)
+                        .build());
+        LogController.addLogger(nonDriveMotors.get("Pusher")); */
 
         //Setting up controller1
         controller1 = new Controller(gamepad1, 0.0f, "1",
@@ -132,7 +157,8 @@ public class BioBuzzTeleOp extends LinearOpMode {
                         Controller.Key.RIGHT_STICK_Y
                 });
 
-        controller2.createChord("IntakeLock", Controller.Key.LEFT_TRIGGER, Controller.Key.RIGHT_TRIGGER);
+        controller2.createChord("ShooterLock", Controller.Key.LEFT_TRIGGER, Controller.Key.RIGHT_TRIGGER);
+        controller2.createChord("IntakeLock", Controller.Key.BUMPER_RIGHT, Controller.Key.BUMPER_RIGHT);
 
         LogController.logInfo("Waiting for start...");
         waitForStart();
@@ -147,19 +173,45 @@ public class BioBuzzTeleOp extends LinearOpMode {
                 drive.mecanumDrive(0.25 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.25 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
             else {
-                drive.mecanumDrive(0.88 * controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -0.75 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
+                drive.mecanumDrive(controller1.analogDeadband(Controller.Key.RIGHT_STICK_X), -1 * controller1.analogDeadband(Controller.Key.LEFT_STICK_Y), -1 * controller1.analogDeadband(Controller.Key.LEFT_STICK_X));
             }
             //The x and y say if you move the joystick horizontally or vertically
-
-            if (controller2.buttonSingle("IntakeLock")) {
-                controller2.flipToggle("IntakeLock");
-                intakeLockPower = (-1 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
+            if (controller2.buttonSingle("ShooterLock")) {
+                controller2.flipToggle("ShooterLock");
+                shooterLockPower = Math.min(0, 0.63 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
             }
-            if (controller2.getToggle("IntakeLock")) {
-                nonDriveMotors.get("Intake").setPower(intakeLockPower);
+            if (controller2.getToggle("ShooterLock")) {
+                nonDriveMotors.get("pollenShooter").setPower(shooterLockPower);
             } else {
-                nonDriveMotors.get("Intake").setPower(-1 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
+                nonDriveMotors.get("pollenShooter").setPower(Math.min(0, 0.63 * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y)));
             }
+
+            /*if (controller2.buttonSingle("ShooterLock")) {
+                controller2.flipToggle("ShooterLock");
+                shooterLockPower = Math.min(0, (shotPower/100.0) * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y));
+            }
+            if (controller2.getToggle("ShooterLock")) {
+                nonDriveMotors.get("nectarShooter").setPower(shooterLockPower);
+            } else {
+                nonDriveMotors.get("nectarShooter").setPower(Math.min(0, (shotPower/100.0) * controller2.analogDeadband(Controller.Key.LEFT_STICK_Y)));
+            } */
+
+            /*if (controller2.getButton(Controller.Key.A)) {
+                nonDriveMotors.get("Pusher").setPosition(1);
+            } else if (controller2.getButton(Controller.Key.Y)) {
+                nonDriveMotors.get("Pusher").setPosition(-1);
+            } */
+
+            nonDriveMotors.get("Intake").setPower(-1 * controller2.getAnalog(Controller.Key.RIGHT_STICK_Y));
+
+            telemetry.addData("Pollen RPM", nonDriveMotors.get("pollenShooter").getRPM());
+            //telemetry.addData("Nectar RPM", nonDriveMotors.get("nectarShooter").getRPM());
+            telemetry.addData("Shooter Lock", shooterLockPower);
+
+            telemetry.addData("Intake RPM", nonDriveMotors.get("Intake").getRPM());
+            telemetry.addData("Intake Lock", intakeLockPower);
+
+            telemetry.update();
         }
 
         //Closes all logs
